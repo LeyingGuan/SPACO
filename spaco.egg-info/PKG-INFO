@@ -1,0 +1,23 @@
+Metadata-Version: 2.1
+Name: spaco
+Version: 1.1.0
+Summary: Smooth and probablistic PARAFAC decomposition with covariates
+Home-page: UNKNOWN
+Author: Leying Guan
+Author-email: leying.guan@yale.edu
+License: MIT
+Keywords: python,spaco
+Platform: UNKNOWN
+Classifier: Development Status :: 4 - Beta
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 3.5
+Classifier: Programming Language :: Python :: 3.6
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Topic :: Software Development :: Libraries
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
+Classifier: Intended Audience :: Developers
+
+UNKNOWN
+

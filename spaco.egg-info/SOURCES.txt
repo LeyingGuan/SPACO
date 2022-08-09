@@ -1,0 +1,12 @@
+README.md
+setup.py
+spaco.egg-info/PKG-INFO
+spaco.egg-info/SOURCES.txt
+spaco.egg-info/dependency_links.txt
+spaco.egg-info/not-zip-safe
+spaco.egg-info/requires.txt
+spaco.egg-info/top_level.txt
+src/__init__.py
+src/evaluation_utils.py
+src/helpers.py
+src/spaco_module.py
