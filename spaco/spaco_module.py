@@ -551,7 +551,7 @@ class SPACObase():
                         cross1[k,l,t] =  np.sum(x0[obs0] * x1[obs0]/s2[obs0])
                         for j in np.arange(self.num_features):
                             ii = np.arange(self.num_subjects)[self.O[:,t,j]==1]
-                            cross1[k,l,t] += np.sum(x3[ii] * self.V[j,k] * self.V[j,l]/self.s2[ii])
+                            cross1[k,l,t] += np.sum(x3[ii] * self.V[j,k] * self.V[j,l]/s2[ii])
                         cross1[l,k,t] = cross1[k,l,t]
         # O(KITJ)
         Phi0 = self.Phi.copy()
