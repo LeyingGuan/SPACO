@@ -1,7 +1,5 @@
 import spaco
 import numpy as np
-import sys
-import random
 def dataGen(I, T, J, q, rate, s=3, K0 = 3, SNR1 = 1.0, SNR2 = 3.0):
     Phi0 = np.zeros((T, K0))
     Phi0[:,0] = 1.0
