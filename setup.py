@@ -12,7 +12,7 @@ setup(name='spaco',
       author_email='leying.guan@yale.edu',
       license='MIT',
       packages=find_packages(),
-      install_requires=['setuptools==59.5.0','mxnet','torch>=1.11.0','tensorflow>=2.3.1','numpy==1.18.0','pandas==1.2.1',
+      install_requires=['setuptools==59.5.0','mxnet','torch==1.11.0','tensorflow==2.3.1','numpy==1.18.0','pandas==1.2.1',
                          'sklearn', 'rpy2==3.4.2', 'tensorly==0.6.0'],
       keywords=['python', 'spaco'],
       classifiers=[
