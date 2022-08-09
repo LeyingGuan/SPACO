@@ -43,7 +43,7 @@ def dataGen(I, T, J, q, rate, s=3, K0 = 3, SNR1 = 1.0, SNR2 = 3.0):
     return Xcomplete, signal_complete , Xobs, Obs, T0, Phi0, V0, U, PhiV0, Z, beta
 
 it = 211
-I = 100; T = 30; J = 100; q = 5;
+I = 100; T = 30; J = 10; q = 100;
 SNR2 = 5.0; SNR1 = 2.0
 spaco.seed_everything(seed=it)
 
