@@ -67,6 +67,13 @@ spaco_fit.train(update_cov=True,
             tol=1e-4, trace=True
             )
 
+eval = spaco.metrics(U=spaco_fit.mu,Phi=spaco_fit.Phi, V=spaco_fit.V,
+                     U0=data[7],Phi0=data[5], V0=data[6])
+
+eval.component_alignment()
+eval.reconstruction_error(O=data[3])
+eval.alignment
+
 train_ids, test_ids = spaco.cutfoldid(n = I, nfolds = 5, random_state = 2022)
 
 spaco_fit.cross_validation_train( train_ids,
