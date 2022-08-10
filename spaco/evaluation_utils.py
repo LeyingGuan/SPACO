@@ -134,7 +134,7 @@ class comparison_pipe():
         ##SupCP init_propse
         try:
             SupCP_functional = SPACOcv(data_obj)
-            SupCP_functional.train_preparation(run_prepare=True,un_init=True,mean_trend_removal=False,smooth_penalty=False)
+            SupCP_functional.train_preparation(run_prepare=True,run_init=True,mean_trend_removal=False,smooth_penalty=False)
             SupCP_functional.train(update_cov=True,
                         update_sigma_mu=True,
                         update_sigma_noise=True,
@@ -155,7 +155,7 @@ class comparison_pipe():
 
             self.eval_dict['SupCP_functional'].component_alignment()
             self.eval_dict['SupCP_functional'].reconstruction_error(O=self.O)
-        except ValueError:
+        except:
             pass
         #SPACO
         try:
@@ -185,7 +185,7 @@ class comparison_pipe():
             self.eval_dict['spaco'].component_alignment()
             self.eval_dict['spaco'].reconstruction_error(O=self.O)
             self.spaco_fit = spaco
-        except ValueError:
+        except:
             pass
         #SPACO-
         try:
@@ -215,7 +215,7 @@ class comparison_pipe():
 
             self.eval_dict['spaco_'].component_alignment()
             self.eval_dict['spaco_'].reconstruction_error(O=self.O)
-        except ValueError:
+        except:
             pass
         self.eval_dict['empirical'] = dict()
         X = self.X
