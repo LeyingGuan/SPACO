@@ -94,14 +94,14 @@ class comparison_pipe():
         self.eval_dict['cp'].reconstruction_error(O=self.O)
         ##run SupCP random
         data_obj = dict(X=self.X, O=self.O, Z=self.Z,
-                        time_stamps=self.time_stamps, rank=rank)
-
-        SupCP_random = SPACOcv(data_obj)
-        SupCP_random.train_preparation(run_prepare=True,
-                                run_init=False,
-                                mean_trend_removal=False,
-                                smooth_penalty=False)
+                        time_stamps=self.time_stamps,
+                        rank=rank)
         try:
+            SupCP_random = SPACOcv(data_obj)
+            SupCP_random.train_preparation(run_prepare=True,
+                                           run_init=False,
+                                           mean_trend_removal=False,
+                                           smooth_penalty=False)
             SupCP_random.train(update_cov=True,
                         update_sigma_mu=True,
                         update_sigma_noise=True,
@@ -132,12 +132,9 @@ class comparison_pipe():
         except ValueError:
             pass
         ##SupCP init_propse
-        SupCP_functional= SPACOcv(data_obj)
-        SupCP_functional.train_preparation(run_prepare=True,
-                                run_init=True,
-                                mean_trend_removal=False,
-                                smooth_penalty=False)
         try:
+            SupCP_functional = SPACOcv(data_obj)
+            SupCP_functional.train_preparation(run_prepare=True,un_init=True,mean_trend_removal=False,smooth_penalty=False)
             SupCP_functional.train(update_cov=True,
                         update_sigma_mu=True,
                         update_sigma_noise=True,
