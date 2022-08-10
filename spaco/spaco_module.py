@@ -318,10 +318,10 @@ class SPACObase():
             self.sigma_mu = np.ones((self.K)) * 10 ** 8
         # no smoothness penalty
         if self.lambda1 is None:
-            self.lambda1 = np.ones((self.K))*1e-4
+            self.lambda1 = np.ones((self.K))*1e-2
         # no lasso penalty
         if self.lambda2 is None:
-            self.lambda2 = np.ones((self.K))*1e-4
+            self.lambda2 = np.ones((self.K))*1e-2
         if self.sigma_noise is None:
             self.sigma_noise = np.ones((self.num_features))
         if self.orthogonal is None:
