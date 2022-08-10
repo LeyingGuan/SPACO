@@ -129,7 +129,7 @@ class comparison_pipe():
             self.eval_dict[
                 'SupCP_random'].reconstruction_error(
                 O=self.O)
-        except ValueError:
+        except:
             pass
         ##SupCP init_propse
         try:
