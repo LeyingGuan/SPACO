@@ -872,7 +872,7 @@ class CRtest_cross:
             self.test_ids = [np.arange(self.Z.shape[0])]
             self.train_ids = [np.arange(self.Z.shape[0])]
             self.sigma_mu = np.ones((self.K, 1))
-            self.sigma_mu[:,0] = spaco_cross.sigmaF.copy()
+            self.sigma_mu[:,0] = spaco_cross.sigma_mu.copy()
 
         self.beta = spaco_cross.beta.copy()
         self.beta_tmp = self.beta.copy()
