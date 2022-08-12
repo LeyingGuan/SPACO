@@ -350,6 +350,7 @@ def beta_fit(Z, transform_mat, transform_vec, beta,intercepts,lambda2, fit_inter
 
 
 def binary_search_vector(a: np.array, b:np.array, norm_constraint = 1.0):
+    MAX_ITER = 1000
     if np.min(a) <= 0:
         sys.exit('encountered nonPD input during the subroutine updating V.')
     z = b/a
@@ -366,7 +367,8 @@ def binary_search_vector(a: np.array, b:np.array, norm_constraint = 1.0):
         lam_min = 0.0
         lam_max = 0.0
     lam_cur = 0.0
-    while np.abs(norm2_0 - norm_constraint) > 1e-8:
+    it = 0
+    while np.abs(norm2_0 - norm_constraint) > 1e-8 and it < MAX_ITER:
         if norm2_0 >norm_constraint:
             lam_min = lam_cur
             lam_cur = (lam_cur + lam_max)/2.0
@@ -375,6 +377,7 @@ def binary_search_vector(a: np.array, b:np.array, norm_constraint = 1.0):
             lam_cur = (lam_cur + lam_min) / 2.0
         z = b / (a + lam_cur)
         norm2_0 = np.sqrt(np.sum(z**2))
+        it+=1
     return lam_cur
 
 
