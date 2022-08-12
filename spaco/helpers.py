@@ -467,8 +467,6 @@ def permutation_align_greedy(cross_fit_obj, cor_mat):
     return cross_fit_obj
 
 
-
-
 def beta_fit_cleanup(Z, beta, intercepts, delta, prevec, cov, noiseCov,
                      test_ids, sigmaF, lambda2, factor_idx = None,
                      fit_intercept = True, max_iter = 1, tol  = 0.01,

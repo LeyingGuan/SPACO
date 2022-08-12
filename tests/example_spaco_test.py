@@ -43,7 +43,7 @@ def dataGen(I, T, J, q, rate, s=3, K0 = 3, SNR1 = 1.0, SNR2 = 3.0):
 
 it = 211
 I = 100; T = 30; J = 10; q = 100;
-SNR2 = 5.0; SNR1 = 2.0
+SNR2 = 1.0; SNR1 = 3.0
 spaco.seed_everything(seed=it)
 
 data = dataGen(I=I, T=T, J=J, q=q, rate = .8, s=3, K0 = 3, SNR1 = SNR1, SNR2 = SNR2)
@@ -65,13 +65,6 @@ spaco_fit.train(update_cov=True,
             max_iter=30, min_iter=1,
             tol=1e-4, trace=True
             )
-
-eval = spaco.metrics(U=spaco_fit.mu,Phi=spaco_fit.Phi, V=spaco_fit.V,
-                     U0=data[7],Phi0=data[5], V0=data[6])
-
-eval.component_alignment()
-eval.reconstruction_error(O=data[3])
-eval.alignment
 
 train_ids, test_ids = spaco.cutfoldid(n = I, nfolds = 5, random_state = 2022)
 

@@ -12,6 +12,7 @@ spaco: spaco with outomatic penalty selection.
 spaco_cf: spaco with cross-fit.
 spaco_inf: post selection inference for the spaco or spaco_cf objs.
 '''
+import copy
 from rpy2.robjects import pandas2ri
 from rpy2.robjects import r
 from rpy2.robjects.packages import importr
@@ -857,23 +858,32 @@ class CRtest_cross:
         self.Z = spaco_cross.Z.copy()
         self.U = np.zeros((spaco_cross.num_subjects, spaco_cross.K))
         self.Ztmp = self.Z.copy()
+        self.num_features = spaco_cross.num_features
+        self.num_times = spaco_cross.num_times
+        self.num_subjects = spaco_cross.num_subjects
+        self.sigma_noise = spaco_cross.sigma_noise.copy()
+        self.intermediantes = copy.deepcopy(spaco_cross.intermediantes)
         if self.type == 'cross':
-            self.cov = spaco_cross.cov_cross.copy()
-            self.sigma_mu = spaco_cross.cross_sigma_mu.copy()
-            self.transform_mat = spaco_cross.transform_mat_cross.copy()
-            self.transform_vec = spaco_cross.transform_vec_cross.copy()
-            self.transform_vec = spaco_cross.transform_vec_cross.copy()
             self.test_ids = spaco_cross.test_ids
             self.train_ids = spaco_cross.train_ids
+            self.cov = spaco_cross.cov_cross.copy()
+            self.sigma_mu = spaco_cross.cross_sigma_mu.copy()
+            self.V = spaco_cross.crossV.copy()
+            self.Phi = spaco_cross.crossPhi.copy()
+            self.transform_mat = spaco_cross.transform_mat_cross.copy()
+            self.transform_vec = spaco_cross.transform_vec_cross.copy()
         else:
-            self.cov = spaco_cross.cov.copy()
-            self.transform_mat = spaco_cross.transform_mat.copy()
-            self.transform_vec = spaco_cross.transform_vec.copy()
             self.test_ids = [np.arange(self.Z.shape[0])]
             self.train_ids = [np.arange(self.Z.shape[0])]
+            self.cov = spaco_cross.cov.copy()
             self.sigma_mu = np.ones((self.K, 1))
             self.sigma_mu[:,0] = spaco_cross.sigma_mu.copy()
-
+            self.V = np.zeros((self.num_features, self.K, 1))
+            self.V[:,:,0] = spaco_cross.V.copy()
+            self.Phi = np.zeros((self.num_times, self.K, 1))
+            self.Phi[:, :, 0] = spaco_cross.Phi.copy()
+            self.transform_mat = spaco_cross.transform_mat.copy()
+            self.transform_vec = spaco_cross.transform_vec.copy()
         self.beta = spaco_cross.beta.copy()
         self.beta_tmp = self.beta.copy()
         self.beta_drop = np.zeros((spaco_cross.beta.shape[0], spaco_cross.beta.shape[1], spaco_cross.beta.shape[0]))
@@ -892,6 +902,7 @@ class CRtest_cross:
         self.coef_marginal = np.zeros((self.Z.shape[1], self.K))
         self.coef_partial = np.zeros((self.Z.shape[1], self.K))
         self.residuals = np.zeros((self.Z.shape[0], self.K))
+        self.pre_cov = self.cov.copy()
         self.cov_delta = self.cov.copy()
         self.noise_delta = np.ones((self.Z.shape[0], self.K, self.K))
         self.noise_inv = np.ones((self.Z.shape[0], self.K, self.K))
@@ -920,13 +931,28 @@ class CRtest_cross:
 
     def precalculation(self):
         #calculate prevec
+        PhiV = np.zeros((self.num_times * self.num_features, self.K))
+        # O(KTJ)
+        s2 = np.zeros((self.num_times * self.num_features))
+        for j in np.arange(self.num_features):
+            ll = np.arange(j * self.num_times,(j + 1) * self.num_times)
+            s2[ll] = self.sigma_noise[j]
         for fold_id in np.arange(len(self.test_ids)):
+            for k in np.arange(self.K):
+                PhiV[:, k] = np.kron(self.V[:, k,fold_id].reshape(self.num_features,1),
+                    self.Phi[:, k,fold_id].reshape((self.num_times, 1))).reshape(-1)
             for i0 in np.arange(len(self.test_ids[fold_id])):
                 i = self.test_ids[fold_id][i0]
                 tmp1 = np.linalg.inv(self.cov[i, :, :])
                 tmp2 = np.diag(1.0 / self.sigma_mu[:, fold_id])
+                obs0 = self.intermediantes['O1'][i, :]
+                obs0 = np.where(obs0 == 1)[0]
+                PhiV0 = PhiV[obs0, :]
+                s20 = s2[obs0]
+                # (V\cdot Phi)^t L^{-1} (V\cdot Phi)
+                self.pre_cov[i, :, :] = np.matmul(np.transpose(PhiV0) / s20, PhiV0)
                 self.prevec[i, :] = np.matmul(tmp1,self.transform_vec[i,:] * self.sigma_mu[:,fold_id])
-                self.cov_delta[i, :, :] = np.linalg.inv(tmp1 - tmp2 + self.delta* tmp2)
+                self.cov_delta[i, :, :] = np.linalg.inv(self.pre_cov[i, :, :] + self.delta* tmp2)
                 self.noise_delta[i,:,:] = np.diag(self.sigma_mu[:,fold_id]) + (1.0 - 2*self.delta)*self.cov_delta[i,:,:]+\
                                              (self.delta**2-self.delta) * np.matmul(self.cov_delta[i,:,:]/self.sigma_mu[:,fold_id],self.cov_delta[i,:,:])
                 self.noise_inv[i,:,:] = np.linalg.inv(self.noise_delta[i,:,:])
@@ -937,6 +963,7 @@ class CRtest_cross:
         sigmaF = self.sigma_mu, lambda2 = self.lambda2,factor_idx=None, lam2_update=self.lam2_update, nlam2= self.nlam2,
         nfolds = nfolds, foldid = self.foldid, fit_intercept = self.fit_intercept, max_iter =max_iter, tol  =tol,
         beta_fix = self.beta, intercepts_fix = self.intercepts, iffix =fixbeta0)
+
     def beta_fun_one(self, nfolds, j = 0, max_iter = 1, tol = 0.01, fixbeta0 = True):
         idx = np.arange(self.Z.shape[1])
         idx = np.delete(idx, j)
