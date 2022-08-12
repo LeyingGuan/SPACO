@@ -1,5 +1,6 @@
 import spaco
 import numpy as np
+import copy
 def dataGen(I, T, J, q, rate, s=3, K0 = 3, SNR1 = 1.0, SNR2 = 3.0):
     Phi0 = np.zeros((T, K0))
     Phi0[:,0] = 1.0
@@ -85,4 +86,45 @@ delta = 0;
 tol = 0.01;
 fixbeta0 = False;
 method = "cross"
-feature_eval = spaco.CRtest_cross(spaco, type=method, delta=delta)
+nfolds = 5
+random_state = 0
+feature_eval = spaco.CRtest_cross(spaco_fit, type=method, delta=delta)
+#precalculate quantities that stay the same for different Z
+feature_eval.precalculation()
+feature_eval.cut_folds(nfolds=nfolds, random_state=random_state)
+feature_eval.beta_fun_full(nfolds=nfolds, max_iter=1, tol= tol, fixbeta0=fixbeta0)
+
+#drop each feature and refit
+for j in np.arange(feature_eval.Z.shape[1]):
+    print(j)
+    feature_eval.beta_fun_one(nfolds=nfolds, j=j, max_iter=1, fixbeta0=fixbeta0)
+#calculate the test statistics for conditional and mariginal independence
+for j in np.arange(feature_eval.Z.shape[1]):
+    feature_eval.precalculation_response(j=j)
+    feature_eval.coef_partial_fun(j = j, inplace=True)
+    feature_eval.coef_marginal_fun(j = j, inplace=True)
+    #inplace = True: save to class object directly
+    #result saved in feature_eval.coef_marginal
+    # result saved in feature_eval.coef_partial
+
+
+##Generate randomized variables
+B  = 200
+Zconditional = np.random.normal(size=(I, q, B))
+Zmarginal = Zconditional
+feature_eval.coef_partial_random = np.zeros((feature_eval.coef_partial.shape[0],
+                                             feature_eval.coef_partial.shape[1],
+                                             B))
+feature_eval.coef_marginal_random = np.zeros((feature_eval.coef_partial.shape[0],
+                                             feature_eval.coef_partial.shape[1],
+                                             B))
+
+for j in np.arange(feature_eval.Z.shape[1]):
+    feature_eval.coef_random_fun(Zconditional, j, type = "partial")
+    feature_eval.coef_random_fun(Zmarginal, j, type="marginal")
+
+pvals_partial_empirical, pvals_partial_fitted = \
+    feature_eval.pvalue_calculation(type = "partial",pval_fit = True, dist_name ='nct')
+
+pvals_marginal_empirical, pvals_marginal_fitted = \
+    feature_eval.pvalue_calculation(type = "marginal",pval_fit = True, dist_name ='nct')

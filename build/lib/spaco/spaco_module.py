@@ -458,7 +458,7 @@ class SPACObase():
             self.mu[i, :] = np.matmul(self.cov[i, :, :],tmp2 + tmp3)
             # transforma_mat documents M^i matrices in the supp
             self.transform_mat[i,:, :] = M.copy()
-            # transforma_mat documents m^i vectors in the supp
+            # transforma_vec documents m^i vectors in the supp
             self.transform_vec[i,:] = np.matmul(np.matmul(tmp2, self.cov[i,:,:]),np.diag(1.0/self.sigma_mu))
     def V_update(self):
         #precalculation of large matrices used
@@ -701,7 +701,8 @@ class SPACOcv(SPACO):
         self.crossIntercept = None
         self.s2 = np.zeros((self.num_features * self.num_times))
         self.cross_likloss = None
-
+        self.testing_input = dict()
+        self.testing_output = dict()
     def cross_validation_train(self,
                                train_ids,
                                test_ids,
@@ -844,22 +845,21 @@ class SPACOcv(SPACO):
         self.cross_likloss = loglik
 
 
-
-
 '''
 CRtest and CRtest_cross fix estiamted model parameters other than beta
 and compare the p-values using randomized (conditional) variables.
 '''
 class CRtest_cross:
-    def __init__(self, spaco_cross, type = 'cross', delta = 1.0):
+    def __init__(self, spaco_cross, type = 'cross', delta = 0.0):
         self.type = type
         self.K = spaco_cross.K
         self.delta = delta
         self.Z = spaco_cross.Z.copy()
         self.U = np.zeros((spaco_cross.num_subjects, spaco_cross.K))
+        self.Ztmp = self.Z.copy()
         if self.type == 'cross':
             self.cov = spaco_cross.cov_cross.copy()
-            self.sigmaF = spaco_cross.crossSigmaF.copy()
+            self.sigma_mu = spaco_cross.cross_sigma_mu.copy()
             self.transform_mat = spaco_cross.transform_mat_cross.copy()
             self.transform_vec = spaco_cross.transform_vec_cross.copy()
             self.transform_vec = spaco_cross.transform_vec_cross.copy()
@@ -871,8 +871,9 @@ class CRtest_cross:
             self.transform_vec = spaco_cross.transform_vec.copy()
             self.test_ids = [np.arange(self.Z.shape[0])]
             self.train_ids = [np.arange(self.Z.shape[0])]
-            self.sigmaF = np.ones((self.K, 1))
-            self.sigmaF[:,0] = spaco_cross.sigmaF.copy()
+            self.sigma_mu = np.ones((self.K, 1))
+            self.sigma_mu[:,0] = spaco_cross.sigmaF.copy()
+
         self.beta = spaco_cross.beta.copy()
         self.beta_tmp = self.beta.copy()
         self.beta_drop = np.zeros((spaco_cross.beta.shape[0], spaco_cross.beta.shape[1], spaco_cross.beta.shape[0]))
@@ -883,6 +884,8 @@ class CRtest_cross:
         self.fit_intercept = spaco_cross.fit_intercept
         self.lam2_update = spaco_cross.lam2_update
         self.nlam2 =  spaco_cross.nlam2
+
+        self.foldid = None
         self.Zuse = np.zeros((self.Z.shape[0], self.K))
         self.Ztheta = np.zeros((self.Z.shape[0], self.K, self.K))
         self.offsets = np.ones((self.Z.shape[0], self.K))
@@ -890,15 +893,18 @@ class CRtest_cross:
         self.coef_partial = np.zeros((self.Z.shape[1], self.K))
         self.residuals = np.zeros((self.Z.shape[0], self.K))
         self.cov_delta = self.cov.copy()
-        self.noiseCOV_delta = np.ones((self.Z.shape[0], self.K, self.K))
+        self.noise_delta = np.ones((self.Z.shape[0], self.K, self.K))
         self.noise_inv = np.ones((self.Z.shape[0], self.K, self.K))
         self.prevec = self.transform_vec.copy()
         self.transform_y = np.zeros((self.Z.shape[0], self.K))
         self.transform_residuals = np.zeros((self.Z.shape[0], self.K))
         self.theta = np.zeros((self.Z.shape[1],self.K))
-        self.weights1 = np.zeros((self.Z.shape[0], self.K))
-        self.weights2 = np.zeros((self.Z.shape[0], self.K))
-        self.foldid = None
+        self.weights_w = np.zeros((self.Z.shape[0], self.K))
+        self.weights_z = np.zeros((self.Z.shape[0], self.K))
+
+        self.coef_partial_random = None
+        self.coef_marginal_random = None
+
     def cut_folds(self, nfolds = 5, random_state = 1):
         k_fold = KFold(nfolds, shuffle=True, random_state=random_state)
         subject_ids = np.arange(self.Z.shape[0])
@@ -911,28 +917,24 @@ class CRtest_cross:
         self.foldid = np.zeros(self.Z.shape[0], dtype = int)
         for fold_id in np.arange(nfolds):
             self.foldid[test_ids[fold_id]] = fold_id + 1
-    def precalculation0(self):
+
+    def precalculation(self):
         #calculate prevec
         for fold_id in np.arange(len(self.test_ids)):
             for i0 in np.arange(len(self.test_ids[fold_id])):
                 i = self.test_ids[fold_id][i0]
                 tmp1 = np.linalg.inv(self.cov[i, :, :])
-                self.prevec[i, :] = np.matmul(tmp1,self.transform_vec[i,:] * self.sigmaF[:,fold_id])
-    def precalculation(self):
-        for fold_id in np.arange(len(self.test_ids)):
-            for i0 in np.arange(len(self.test_ids[fold_id])):
-                i = self.test_ids[fold_id][i0]
-                tmp1 = np.linalg.inv(self.cov[i, :, :])
-                tmp2 = np.diag(1.0/self.sigmaF[:,fold_id])
+                tmp2 = np.diag(1.0 / self.sigma_mu[:, fold_id])
+                self.prevec[i, :] = np.matmul(tmp1,self.transform_vec[i,:] * self.sigma_mu[:,fold_id])
                 self.cov_delta[i, :, :] = np.linalg.inv(tmp1 - tmp2 + self.delta* tmp2)
-                self.noiseCOV_delta[i,:,:] = np.diag(self.sigmaF[:,fold_id]) + (1.0 - 2*self.delta)*self.cov_delta[i,:,:]+\
-                                             (self.delta**2-self.delta) * np.matmul(self.cov_delta[i,:,:]/self.sigmaF[:,fold_id],self.cov_delta[i,:,:])
-                self.noise_inv[i,:,:] = np.linalg.inv(self.noiseCOV_delta[i,:,:])
+                self.noise_delta[i,:,:] = np.diag(self.sigma_mu[:,fold_id]) + (1.0 - 2*self.delta)*self.cov_delta[i,:,:]+\
+                                             (self.delta**2-self.delta) * np.matmul(self.cov_delta[i,:,:]/self.sigma_mu[:,fold_id],self.cov_delta[i,:,:])
+                self.noise_inv[i,:,:] = np.linalg.inv(self.noise_delta[i,:,:])
     def beta_fun_full(self, foldid = None, nfolds = 5, max_iter = 1, tol = 0.01, fixbeta0 = True):
         self.beta_tmp, intercepts_tmp, lambda2 = beta_fit_cleanup(Z = self.Z, beta = self.beta_tmp,
         intercepts = self.intercepts_tmp, delta =self.delta, prevec = self.prevec,
-        cov = self.cov_delta, noiseCov = self.noiseCOV_delta, test_ids = self.test_ids,
-        sigmaF = self.sigmaF, lambda2 = self.lambda2,factor_idx=None, lam2_update=self.lam2_update, nlam2= self.nlam2,
+        cov = self.cov_delta, noiseCov = self.noise_delta, test_ids = self.test_ids,
+        sigmaF = self.sigma_mu, lambda2 = self.lambda2,factor_idx=None, lam2_update=self.lam2_update, nlam2= self.nlam2,
         nfolds = nfolds, foldid = self.foldid, fit_intercept = self.fit_intercept, max_iter =max_iter, tol  =tol,
         beta_fix = self.beta, intercepts_fix = self.intercepts, iffix =fixbeta0)
     def beta_fun_one(self, nfolds, j = 0, max_iter = 1, tol = 0.01, fixbeta0 = True):
@@ -952,8 +954,8 @@ class CRtest_cross:
             else:
                 beta1, intercepts, lambda2 =beta_fit_cleanup(Z = Z1, beta = beta1,
         intercepts = intercepts, delta = self.delta, prevec = self.prevec,
-        cov = self.cov_delta, noiseCov = self.noiseCOV_delta, test_ids = self.test_ids,
-        sigmaF = self.sigmaF, lambda2 = self.lambda2,  factor_idx = [k],lam2_update=self.lam2_update, nlam2= self.nlam2,
+        cov = self.cov_delta, noiseCov = self.noise_delta, test_ids = self.test_ids,
+        sigmaF = self.sigma_mu, lambda2 = self.lambda2,  factor_idx = [k],lam2_update=self.lam2_update, nlam2= self.nlam2,
         nfolds = nfolds, foldid =self.foldid, fit_intercept = self.fit_intercept, max_iter = max_iter,tol=tol,
         beta_fix = beta1, intercepts_fix = intercepts, iffix =True)
             self.beta_drop[idx, k, j] = beta1[:,k].copy()
@@ -970,17 +972,19 @@ class CRtest_cross:
                 for k in np.arange(self.K):
                     for l in np.arange(self.K):
                         if l != k:
-                            self.transform_y[i, k] = self.transform_y[i,k] + self.delta * self.cov[i,k,l] * fitted[i,l] /self.sigmaF[l,fold_id]
-                    self.residuals[i, k] = self.transform_y[i, k]  - (1.0 - self.cov[i,k,k]/self.sigmaF[k,fold_id]) * fitted[i,k]
-                    self.weights1[i,k] = 1.0/self.noiseCOV_delta[i,k,k]
-                    self.weights2[i,k] = 1.0 - self.delta * self.cov_delta[i,k,k]/self.sigmaF[k,fold_id]
+                            self.transform_y[i, k] = self.transform_y[i,k] + self.delta * self.cov[i,k,l] * fitted[i,l] /self.sigma_mu[l,fold_id]
+                    self.residuals[i, k] = self.transform_y[i, k]  - (1.0 - self.cov[i,k,k]/self.sigma_mu[k,fold_id]) * fitted[i,k]
+                    self.weights_w[i,k] = 1.0/self.noise_delta[i,k,k]
+                    self.weights_z[i,k] = 1.0 - self.delta * self.cov_delta[i,k,k]/self.sigma_mu[k,fold_id]
     #def Ztheta_prepare(self):
     def Ztheta_calculate(self, j = 0):
         for fold_id in np.arange(len(self.test_ids)):
             for i0 in np.arange(len(self.test_ids[fold_id])):
                 i = self.test_ids[fold_id][i0]
-                self.Ztheta[i,:,:] = self.Z[i,j] * (np.identity(self.K) - self.delta * self.cov_delta[i,:,:]/self.sigmaF[:,fold_id])
-    def coef_partial_fun(self,j, joint = False):
+                self.Ztheta[i,:,:] = self.Ztmp[i,j] * (np.identity(self.K) - self.delta * self.cov_delta[i,:,:]/self.sigma_mu[:,fold_id])
+    def coef_partial_fun(self,j, inplace = True):
+        joint = False
+        tstats = np.zeros(self.K)
         if joint:
             #scale the response and the covariate
             A = np.zeros((self.K, self.K))
@@ -989,11 +993,17 @@ class CRtest_cross:
                 tmp = np.matmul(np.transpose(self.Ztheta[i,:,:]),self.noise_inv[i,:,:])
                 A += np.matmul(tmp,self.Ztheta[i,:,:])
                 a += np.matmul(tmp, self.residuals[i,:])
-            self.coef_partial[j,:] = np.matmul(np.linalg.inv(A),a)
+            tstats = np.matmul(np.linalg.inv(A),a)
         else:
             for k in np.arange(self.K):
-                self.coef_partial[j,k] = np.sum(self.residuals[:,k] * self.Z[:,j] * self.weights1[:,k]*self.weights2[:,k])/np.sum(self.Z[:,j] * self.Z[:,j] * self.weights1[:,k]*self.weights2[:,k]**2)
-    def coef_marginal_fun(self,j,joint = False):
+                tstats[k] = np.sum(self.residuals[:,k] * self.Ztmp [:,j] * self.weights_w[:,k]*self.weights_z[:,k])/np.sum(self.Ztmp[:,j] * self.Ztmp[:,j] * self.weights_w[:,k]*self.weights_z[:,k]**2)
+        if inplace:
+            self.coef_partial[j, :] = tstats.copy()
+        else:
+            return tstats
+    def coef_marginal_fun(self,j, inplace = True):
+        joint = False
+        tstats = np.zeros(self.K)
         if joint:
             #scale the response and the covariate
             A = np.zeros((self.K, self.K))
@@ -1002,10 +1012,54 @@ class CRtest_cross:
                 tmp = np.matmul(np.transpose(self.Ztheta[i,:,:]),self.noise_inv[i,:,:])
                 A += np.matmul(tmp,self.Ztheta[i,:,:])
                 a += np.matmul(tmp, self.transform_y[i,:])
-            self.coef_marginal[j,:] = np.matmul(np.linalg.inv(A),a)
+            tstats = np.matmul(np.linalg.inv(A),a)
         else:
             for k in np.arange(self.K):
-                self.coef_marginal[j,k] = np.sum(self.transform_y[:,k] * self.Z[:,j] * self.weights1[:,k]*self.weights2[:,k])/np.sum(self.Z[:,j] * self.Z[:,j] * self.weights1[:,k]*self.weights2[:,k]**2)
+                tstats[k] = np.sum(self.transform_y[:,k] * self.Ztmp[:,j] * self.weights_w[:,k]*self.weights_z[:,k])/np.sum(self.Ztmp[:,j] * self.Ztmp[:,j] * self.weights_w[:,k]*self.weights_z[:,k]**2)
+        if inplace:
+            self.coef_marginal[j, :] = tstats.copy()
+        else:
+            return tstats
+    def coef_random_fun(self, Zrandom, j, type = "partial"):
+        B = Zrandom.shape[2]
+        for b in np.arange(B):
+            self.Ztmp[:, j] = Zrandom[:, j, b]
+            if type == "partial":
+                if self.coef_partial_random is None:
+                    print("please initiate coef_partial_random to desired dimension")
+                    break;
+                self.coef_partial_random[j,:,b] = \
+                    self.coef_partial_fun(j=j,inplace=False).copy()
+            else:
+                if self.coef_marginal_random is None:
+                    print("please initiate coef_partial_random to desired dimension")
+                    break;
+                self.coef_marginal_random[j,:,b] = \
+                    self.coef_marginal_fun(j=j,inplace=False).copy()
+        self.Ztmp = self.Z.copy()
+    def pvalue_calculation(self, type = "partial",pval_fit = True, dist_name ='nct'):
+        pvals_fitted = np.zeros((self.Z.shape[1], self.K))
+        pvals_empirical = np.zeros((self.Z.shape[1], self.K))
+        if not pval_fit:
+            pvals_fitted[:,:] = np.nan
+        for j in np.arange(pvals_fitted.shape[0]):
+            for k in np.arange(pvals_fitted.shape[1]):
+                if type == "partial":
+                    nulls = self.coef_partial_random[j, k, :]
+                    tstat = self.coef_partial[j, k]
+                else:
+                    nulls = self.coef_marginal_random[j, k, :]
+                    tstat = self.coef_marginal[j, k]
+                # remove infinite values
+                idx = np.where(~np.isnan(nulls))[0]
+                pvals_empirical[j, k] = np.sum(np.abs(nulls[idx]) >= np.abs(tstat) + 1) / (len(idx) + 1)
+                if pval_fit:
+                    pvals_fitted[j,k] = pvalue_fit(z=tstat,nulls=nulls[idx], dist_name=dist_name)
+        return pvals_empirical, pvals_fitted
+
+
+
+
 
 
 

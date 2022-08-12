@@ -856,6 +856,7 @@ class CRtest_cross:
         self.delta = delta
         self.Z = spaco_cross.Z.copy()
         self.U = np.zeros((spaco_cross.num_subjects, spaco_cross.K))
+        self.Ztmp = self.Z.copy()
         if self.type == 'cross':
             self.cov = spaco_cross.cov_cross.copy()
             self.sigma_mu = spaco_cross.cross_sigma_mu.copy()
@@ -900,6 +901,9 @@ class CRtest_cross:
         self.theta = np.zeros((self.Z.shape[1],self.K))
         self.weights_w = np.zeros((self.Z.shape[0], self.K))
         self.weights_z = np.zeros((self.Z.shape[0], self.K))
+
+        self.coef_partial_random = None
+        self.coef_marginal_random = None
 
     def cut_folds(self, nfolds = 5, random_state = 1):
         k_fold = KFold(nfolds, shuffle=True, random_state=random_state)
@@ -977,8 +981,10 @@ class CRtest_cross:
         for fold_id in np.arange(len(self.test_ids)):
             for i0 in np.arange(len(self.test_ids[fold_id])):
                 i = self.test_ids[fold_id][i0]
-                self.Ztheta[i,:,:] = self.Z[i,j] * (np.identity(self.K) - self.delta * self.cov_delta[i,:,:]/self.sigma_mu[:,fold_id])
-    def coef_partial_fun(self,j, joint = False):
+                self.Ztheta[i,:,:] = self.Ztmp[i,j] * (np.identity(self.K) - self.delta * self.cov_delta[i,:,:]/self.sigma_mu[:,fold_id])
+    def coef_partial_fun(self,j, inplace = True):
+        joint = False
+        tstats = np.zeros(self.K)
         if joint:
             #scale the response and the covariate
             A = np.zeros((self.K, self.K))
@@ -987,11 +993,17 @@ class CRtest_cross:
                 tmp = np.matmul(np.transpose(self.Ztheta[i,:,:]),self.noise_inv[i,:,:])
                 A += np.matmul(tmp,self.Ztheta[i,:,:])
                 a += np.matmul(tmp, self.residuals[i,:])
-            self.coef_partial[j,:] = np.matmul(np.linalg.inv(A),a)
+            tstats = np.matmul(np.linalg.inv(A),a)
         else:
             for k in np.arange(self.K):
-                self.coef_partial[j,k] = np.sum(self.residuals[:,k] * self.Z[:,j] * self.weights_w[:,k]*self.weights_z[:,k])/np.sum(self.Z[:,j] * self.Z[:,j] * self.weights_w[:,k]*self.weights_z[:,k]**2)
-    def coef_marginal_fun(self,j,joint = False):
+                tstats[k] = np.sum(self.residuals[:,k] * self.Ztmp [:,j] * self.weights_w[:,k]*self.weights_z[:,k])/np.sum(self.Ztmp[:,j] * self.Ztmp[:,j] * self.weights_w[:,k]*self.weights_z[:,k]**2)
+        if inplace:
+            self.coef_partial[j, :] = tstats.copy()
+        else:
+            return tstats
+    def coef_marginal_fun(self,j, inplace = True):
+        joint = False
+        tstats = np.zeros(self.K)
         if joint:
             #scale the response and the covariate
             A = np.zeros((self.K, self.K))
@@ -1000,10 +1012,55 @@ class CRtest_cross:
                 tmp = np.matmul(np.transpose(self.Ztheta[i,:,:]),self.noise_inv[i,:,:])
                 A += np.matmul(tmp,self.Ztheta[i,:,:])
                 a += np.matmul(tmp, self.transform_y[i,:])
-            self.coef_marginal[j,:] = np.matmul(np.linalg.inv(A),a)
+            tstats = np.matmul(np.linalg.inv(A),a)
         else:
             for k in np.arange(self.K):
-                self.coef_marginal[j,k] = np.sum(self.transform_y[:,k] * self.Z[:,j] * self.weights_w[:,k]*self.weights_z[:,k])/np.sum(self.Z[:,j] * self.Z[:,j] * self.weights_w[:,k]*self.weights_z[:,k]**2)
+                tstats[k] = np.sum(self.transform_y[:,k] * self.Ztmp[:,j] * self.weights_w[:,k]*self.weights_z[:,k])/np.sum(self.Ztmp[:,j] * self.Ztmp[:,j] * self.weights_w[:,k]*self.weights_z[:,k]**2)
+        if inplace:
+            self.coef_marginal[j, :] = tstats.copy()
+        else:
+            return tstats
+    def coef_random_fun(self, Zrandom, j, type = "partial"):
+        B = Zrandom.shape[2]
+        for b in np.arange(B):
+            self.Ztmp[:, j] = Zrandom[:, j, b]
+            if type == "partial":
+                if self.coef_partial_random is None:
+                    print("please initiate coef_partial_random to desired dimension")
+                    break;
+                self.coef_partial_random[j,:,b] = \
+                    self.coef_partial_fun(j=j,inplace=False).copy()
+            else:
+                if self.coef_marginal_random is None:
+                    print("please initiate coef_partial_random to desired dimension")
+                    break;
+                self.coef_marginal_random[j,:,b] = \
+                    self.coef_marginal_fun(j=j,inplace=False).copy()
+        self.Ztmp = self.Z.copy()
+    def pvalue_calculation(self, type = "partial",pval_fit = True, dist_name ='nct'):
+        pvals_fitted = np.zeros((self.Z.shape[1], self.K))
+        pvals_empirical = np.zeros((self.Z.shape[1], self.K))
+        if not pval_fit:
+            pvals_fitted[:,:] = np.nan
+        for j in np.arange(pvals_fitted.shape[0]):
+            print(j)
+            for k in np.arange(pvals_fitted.shape[1]):
+                if type == "partial":
+                    nulls = self.coef_partial_random[j, k, :]
+                    tstat = self.coef_partial[j, k]
+                else:
+                    nulls = self.coef_marginal_random[j, k, :]
+                    tstat = self.coef_marginal[j, k]
+                # remove infinite values
+                idx = np.where(~np.isnan(nulls))[0]
+                pvals_empirical[j, k] = np.sum(np.abs(nulls[idx]) >= np.abs(tstat) + 1) / (len(idx) + 1)
+                if pval_fit:
+                    pvals_fitted[j,k] = pvalue_fit(z=tstat,nulls=nulls[idx], dist_name=dist_name)
+        return pvals_empirical, pvals_fitted
+
+
+
+
 
 
 

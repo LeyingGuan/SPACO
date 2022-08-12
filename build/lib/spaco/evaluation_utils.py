@@ -94,113 +94,129 @@ class comparison_pipe():
         self.eval_dict['cp'].reconstruction_error(O=self.O)
         ##run SupCP random
         data_obj = dict(X=self.X, O=self.O, Z=self.Z,
-                        time_stamps=self.time_stamps, rank=rank)
+                        time_stamps=self.time_stamps,
+                        rank=rank)
+        try:
+            SupCP_random = SPACOcv(data_obj)
+            SupCP_random.train_preparation(run_prepare=True,
+                                           run_init=False,
+                                           mean_trend_removal=False,
+                                           smooth_penalty=False)
+            SupCP_random.train(update_cov=True,
+                        update_sigma_mu=True,
+                        update_sigma_noise=True,
+                        lam1_update=False, lam2_update=False,
+                        max_iter=max_iter, min_iter=1,
+                        tol=1e-4, trace=True
+                        )
+            self.res_cp['SupCP_random'] = dict()
+            self.res_cp['SupCP_random'][
+                'U'] = SupCP_random.mu
+            self.res_cp['SupCP_random'][
+                'Phi'] = SupCP_random.Phi
+            self.res_cp['SupCP_random'][
+                'V'] = SupCP_random.V
+            self.eval_dict['SupCP_random'] = metrics(
+                U=SupCP_random.mu,
+                Phi=SupCP_random.Phi,
+                V=SupCP_random.V,
+                U0=self.U0,
+                Phi0=self.Phi0,
+                V0=self.V0)
 
-        SupCP_random = SPACOcv(data_obj)
-        SupCP_random.train_preparation(run_prepare=True,
-                                run_init=False,
-                                mean_trend_removal=False,
-                                smooth_penalty=False)
-        SupCP_random.train(update_cov=True,
-                    update_sigma_mu=True,
-                    update_sigma_noise=True,
-                    lam1_update=False, lam2_update=False,
-                    max_iter=max_iter, min_iter=1,
-                    tol=1e-4, trace=True
-                    )
-        self.res_cp['SupCP_random'] = dict()
-        self.res_cp['SupCP_random']['U'] =SupCP_random.mu
-        self.res_cp['SupCP_random']['Phi'] = SupCP_random.Phi
-        self.res_cp['SupCP_random']['V'] = SupCP_random.V
-        self.eval_dict['SupCP_random'] = metrics(U=SupCP_random.mu,
-                                     Phi=SupCP_random.Phi,
-                                     V=SupCP_random.V,
-                                     U0=self.U0,
-                                     Phi0=self.Phi0,
-                                     V0=self.V0)
-
-        self.eval_dict['SupCP_random'].component_alignment()
-        self.eval_dict['SupCP_random'].reconstruction_error(O=self.O)
+            self.eval_dict[
+                'SupCP_random'].component_alignment()
+            self.eval_dict[
+                'SupCP_random'].reconstruction_error(
+                O=self.O)
+        except:
+            pass
         ##SupCP init_propse
-        SupCP_functional= SPACOcv(data_obj)
-        SupCP_functional.train_preparation(run_prepare=True,
-                                run_init=True,
-                                mean_trend_removal=False,
-                                smooth_penalty=False)
-        SupCP_functional.train(update_cov=True,
-                    update_sigma_mu=True,
-                    update_sigma_noise=True,
-                    lam1_update=False, lam2_update=False,
-                    max_iter=max_iter, min_iter=1,
-                    tol=1e-4, trace=True
-                    )
-        self.res_cp['SupCP_functional'] = dict()
-        self.res_cp['SupCP_functional']['U'] =SupCP_functional.mu
-        self.res_cp['SupCP_functional']['Phi'] = SupCP_functional.Phi
-        self.res_cp['SupCP_functional']['V'] = SupCP_functional.V
-        self.eval_dict['SupCP_functional'] = metrics(U=SupCP_functional.mu,
-                                     Phi=SupCP_functional.Phi,
-                                     V=SupCP_functional.V,
-                                     U0=self.U0,
-                                     Phi0=self.Phi0,
-                                     V0=self.V0)
+        try:
+            SupCP_functional = SPACOcv(data_obj)
+            SupCP_functional.train_preparation(run_prepare=True,run_init=True,mean_trend_removal=False,smooth_penalty=False)
+            SupCP_functional.train(update_cov=True,
+                        update_sigma_mu=True,
+                        update_sigma_noise=True,
+                        lam1_update=False, lam2_update=False,
+                        max_iter=max_iter, min_iter=1,
+                        tol=1e-4, trace=True
+                        )
+            self.res_cp['SupCP_functional'] = dict()
+            self.res_cp['SupCP_functional']['U'] =SupCP_functional.mu
+            self.res_cp['SupCP_functional']['Phi'] = SupCP_functional.Phi
+            self.res_cp['SupCP_functional']['V'] = SupCP_functional.V
+            self.eval_dict['SupCP_functional'] = metrics(U=SupCP_functional.mu,
+                                         Phi=SupCP_functional.Phi,
+                                         V=SupCP_functional.V,
+                                         U0=self.U0,
+                                         Phi0=self.Phi0,
+                                         V0=self.V0)
 
-        self.eval_dict['SupCP_functional'].component_alignment()
-        self.eval_dict['SupCP_functional'].reconstruction_error(O=self.O)
+            self.eval_dict['SupCP_functional'].component_alignment()
+            self.eval_dict['SupCP_functional'].reconstruction_error(O=self.O)
+        except:
+            pass
         #SPACO
-        spaco= SPACOcv(data_obj)
-        spaco.train_preparation(run_prepare=True,
-                                run_init=True,
-                                mean_trend_removal=False,
-                                smooth_penalty=True)
-        spaco.train(update_cov=True,
-                    update_sigma_mu=True,
-                    update_sigma_noise=True,
-                    lam1_update=True, lam2_update=True,
-                    max_iter=max_iter, min_iter=1,
-                    tol=1e-4, trace=True
-                    )
-        self.res_cp['spaco'] = dict()
-        self.res_cp['spaco']['U'] =spaco.mu
-        self.res_cp['spaco']['Phi'] = spaco.Phi
-        self.res_cp['spaco']['V'] = spaco.V
-        self.eval_dict['spaco'] = metrics(U=spaco.mu,
-                                     Phi=spaco.Phi,
-                                     V=spaco.V,
-                                     U0=self.U0,
-                                     Phi0=self.Phi0,
-                                     V0=self.V0)
+        try:
+            spaco= SPACOcv(data_obj)
+            spaco.train_preparation(run_prepare=True,
+                                    run_init=True,
+                                    mean_trend_removal=False,
+                                    smooth_penalty=True)
+            spaco.train(update_cov=True,
+                        update_sigma_mu=True,
+                        update_sigma_noise=True,
+                        lam1_update=True, lam2_update=True,
+                        max_iter=max_iter, min_iter=1,
+                        tol=1e-4, trace=True
+                        )
+            self.res_cp['spaco'] = dict()
+            self.res_cp['spaco']['U'] =spaco.mu
+            self.res_cp['spaco']['Phi'] = spaco.Phi
+            self.res_cp['spaco']['V'] = spaco.V
+            self.eval_dict['spaco'] = metrics(U=spaco.mu,
+                                         Phi=spaco.Phi,
+                                         V=spaco.V,
+                                         U0=self.U0,
+                                         Phi0=self.Phi0,
+                                         V0=self.V0)
 
-        self.eval_dict['spaco'].component_alignment()
-        self.eval_dict['spaco'].reconstruction_error(O=self.O)
-        self.spaco_fit = spaco
+            self.eval_dict['spaco'].component_alignment()
+            self.eval_dict['spaco'].reconstruction_error(O=self.O)
+            self.spaco_fit = spaco
+        except:
+            pass
         #SPACO-
-        data_obj['Z'] = None
-        spaco_= SPACOcv(data_obj)
-        spaco_.train_preparation(run_prepare=True,
-                                run_init=True,
-                                mean_trend_removal=False,
-                                smooth_penalty=True)
-        spaco_.train(update_cov=True,
-                    update_sigma_mu=True,
-                    update_sigma_noise=True,
-                    lam1_update=True, lam2_update=True,
-                    max_iter=max_iter, min_iter=1,
-                    tol=1e-4, trace=True
-                    )
-        self.res_cp['spaco_'] = dict()
-        self.res_cp['spaco_']['U'] =spaco_.mu
-        self.res_cp['spaco_']['Phi'] = spaco_.Phi
-        self.res_cp['spaco_']['V'] = spaco_.V
-        self.eval_dict['spaco_'] = metrics(U=spaco_.mu,
-                                     Phi=spaco_.Phi,
-                                     V=spaco_.V,
-                                     U0=self.U0,
-                                     Phi0=self.Phi0,
-                                     V0=self.V0)
+        try:
+            data_obj['Z'] = None
+            spaco_= SPACOcv(data_obj)
+            spaco_.train_preparation(run_prepare=True,
+                                    run_init=True,
+                                    mean_trend_removal=False,
+                                    smooth_penalty=True)
+            spaco_.train(update_cov=True,
+                        update_sigma_mu=True,
+                        update_sigma_noise=True,
+                        lam1_update=True, lam2_update=True,
+                        max_iter=max_iter, min_iter=1,
+                        tol=1e-4, trace=True
+                        )
+            self.res_cp['spaco_'] = dict()
+            self.res_cp['spaco_']['U'] =spaco_.mu
+            self.res_cp['spaco_']['Phi'] = spaco_.Phi
+            self.res_cp['spaco_']['V'] = spaco_.V
+            self.eval_dict['spaco_'] = metrics(U=spaco_.mu,
+                                         Phi=spaco_.Phi,
+                                         V=spaco_.V,
+                                         U0=self.U0,
+                                         Phi0=self.Phi0,
+                                         V0=self.V0)
 
-        self.eval_dict['spaco_'].component_alignment()
-        self.eval_dict['spaco_'].reconstruction_error(O=self.O)
+            self.eval_dict['spaco_'].component_alignment()
+            self.eval_dict['spaco_'].reconstruction_error(O=self.O)
+        except:
+            pass
         self.eval_dict['empirical'] = dict()
         X = self.X
         X0 = self.signal
