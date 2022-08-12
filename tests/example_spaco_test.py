@@ -80,3 +80,9 @@ spaco_fit.cross_validation_train( train_ids,
                                min_iter = 1,
                                tol=1e-3,
                                trace = True)
+
+delta = 0;
+tol = 0.01;
+fixbeta0 = False;
+method = "cross"
+feature_eval = spaco.CRtest_cross(spaco, type=method, delta=delta)
