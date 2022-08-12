@@ -128,3 +128,9 @@ pvals_partial_empirical, pvals_partial_fitted = \
 
 pvals_marginal_empirical, pvals_marginal_fitted = \
     feature_eval.pvalue_calculation(type = "marginal",pval_fit = True, dist_name ='nct')
+
+
+# nulls = feature_eval.coef_partial_random[0,0,:]
+# tstat = feature_eval.coef_partial[0,0]
+# idx = np.where(~np.isnan(nulls))[0]
+# (np.sum(np.abs(nulls[idx]) >= np.abs(tstat)) + 1.0) / (len(idx) + 1.0)

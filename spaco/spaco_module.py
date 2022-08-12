@@ -1053,7 +1053,7 @@ class CRtest_cross:
                     tstat = self.coef_marginal[j, k]
                 # remove infinite values
                 idx = np.where(~np.isnan(nulls))[0]
-                pvals_empirical[j, k] = np.sum(np.abs(nulls[idx]) >= np.abs(tstat) + 1.0) / (len(idx) + 1.0)
+                pvals_empirical[j, k] = (np.sum(np.abs(nulls[idx]) >= np.abs(tstat)) + 1.0) / (len(idx) + 1.0)
                 if pval_fit:
                     pvals_fitted[j,k] = pvalue_fit(z=tstat,nulls=nulls[idx], dist_name=dist_name)
         return pvals_empirical, pvals_fitted
