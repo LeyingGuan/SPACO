@@ -807,7 +807,7 @@ class SPACOcv(SPACO):
 
     def cross_logliklihood(self):
         #caclulate log likelihood using cross validation for rank k=1,...,K
-        loglik = np.zeros((self.num_subjects, self.K))
+        loglik = np.zeros((self.num_subjects))
         s2 = np.zeros((self.num_times * self.num_features))
         for j in np.arange(self.num_features):
             ll = np.arange(j * self.num_times,(j + 1) * self.num_times)
@@ -832,19 +832,58 @@ class SPACOcv(SPACO):
                 xte0 = xte0[obs0]
                 s20 = s2[obs0]
                 xhat = np.zeros(xte0.shape)
-                det_sigmmu= 1.0
+                det_sigma_mu= 1.0
                 for l in np.arange(self.K):
-                    det_sigmmu *= sigma_mu[l]
+                    det_sigma_mu *= sigma_mu[l]
                     xhat += PhiV0[:,l] * mu[i, l]
-                    fi = xte0-xhat
-                    loglik[i,l] = np.sum(fi **2/s20)
-                    tmp1 = np.matmul(fi/s20, PhiV0[:,:(l+1)])
-                    Sigmai =cov[i,:(l+1),:(l+1)]
-                    loglik[i, l] -= np.sum(np.matmul(tmp1, Sigmai) * tmp1)
-                    loglik[i, l] += np.log(det_sigmmu) - np.log(np.linalg.det(cov[i,:(l+1),:(l+1)]))
-                    loglik[i, l] += np.sum(np.log(s20))
+                fi = xte0-xhat
+                cov_i = cov[i,:,:]
+                loglik[i] = np.sum(fi **2/s20)
+                tmp1 = np.matmul(fi/s20, PhiV0)
+                loglik[i] -= np.sum(np.matmul(tmp1, cov_i) * tmp1)
+                loglik[i] += np.sum(np.log(sigma_mu))+np.sum(np.log(s20)) - np.log(np.linalg.det(cov_i))
         self.cross_likloss = loglik
 
+    # def cross_logliklihood(self):
+    #     #caclulate log likelihood using cross validation for rank k=1,...,K
+    #     loglik = np.zeros((self.num_subjects, self.K))
+    #     s2 = np.zeros((self.num_times * self.num_features))
+    #     for j in np.arange(self.num_features):
+    #         ll = np.arange(j * self.num_times,(j + 1) * self.num_times)
+    #         s2[ll] = self.sigma_noise[j]
+    #     for k in np.arange(len(self.test_ids)):
+    #         Phi = self.crossPhi[:,:,k]
+    #         V =self.crossV[:,:,k]
+    #         sigma_mu = self.cross_sigma_mu[:,k]
+    #         cov = self.cov_cross
+    #         beta = self.crossBeta[:,:,k]
+    #         mu = np.matmul(self.Z, beta)
+    #         PhiV =np.zeros((self.num_times*self.num_features, self.K))
+    #         #find the most correlated PhiV dimension and flip the sign
+    #         for l in np.arange(self.K):
+    #             PhiV[:,l] = np.kron(V[:,l].reshape((self.num_features,1)),
+    #                                  Phi[:,l].reshape((self.num_times,1))).reshape(-1)
+    #         for i in self.test_ids[k]:
+    #             xte0 = self.intermediantes['Xmod1'][i, :]
+    #             obs0 = self.intermediantes['O1'][i, :]
+    #             obs0 = np.where(obs0 == 1)[0]
+    #             PhiV0 = PhiV[obs0, :]
+    #             xte0 = xte0[obs0]
+    #             s20 = s2[obs0]
+    #             xhat = np.zeros(xte0.shape)
+    #             det_sigma_mu= 1.0
+    #             for l in np.arange(self.K):
+    #                 det_sigma_mu *= sigma_mu[l]
+    #                 xhat += PhiV0[:,l] * mu[i, l]
+    #                 fi = xte0-xhat
+    #                 cov_l_inv =np.matmul(np.transpose(PhiV0[:,:(l+1)]), PhiV0[:,:(l+1)]/s20.reshape((len(s20),1)))+np.diag(sigma_mu[:(l+1)])
+    #                 cov_l = np.linalg.inv(cov_l_inv)
+    #                 loglik[i,l] = np.sum(fi **2/s20)
+    #                 tmp1 = np.matmul(fi/s20, PhiV0[:,:(l+1)])
+    #                 loglik[i, l] -= np.sum(np.matmul(tmp1, cov_l) * tmp1)
+    #                 loglik[i, l] += np.log(det_sigma_mu) - np.log(np.linalg.det(cov_l))
+    #                 loglik[i, l] += np.sum(np.log(s20))
+    #     self.cross_likloss = loglik
 
 '''
 CRtest and CRtest_cross fix estiamted model parameters other than beta
@@ -1087,10 +1126,52 @@ class CRtest_cross:
 
 
 
+def rank_selection_function(X, O, Z, time_stamps, ranks, early_stop = True,
+                            max_iter = 30, cv_iter = 5,
+                            add_std = 0.0, random_state = 2022, nfolds = 5):
+    I = X.shape[0]
+    neglik = np.zeros((I, len(ranks))) * np.nan
+    means = np.zeros((len(ranks))) * np.nan
+    means_std = np.zeros(len(ranks)) * np.nan
+    early_stop = True
+    for irank in np.arange(len(ranks)):
+        rank = ranks[irank]
+        data_obj = dict(X=X, O=O, Z=Z, time_stamps=time_stamps, rank=rank)
 
+        spaco_fit = SPACOcv(data_obj)
+        spaco_fit.train_preparation(run_prepare=True,
+                                    run_init=True,
+                                    mean_trend_removal=False,
+                                    smooth_penalty=True)
 
+        spaco_fit.train(update_cov=True,
+                        update_sigma_mu=True,
+                        update_sigma_noise=True,
+                        lam1_update=True, lam2_update=True,
+                        max_iter=max_iter, min_iter=1,
+                        tol=1e-4, trace=True
+                        )
 
+        train_ids, test_ids = cutfoldid(n=I, nfolds=5,
+                                              random_state=random_state)
 
+        spaco_fit.cross_validation_train(train_ids,
+                                         test_ids,
+                                         max_iter=cv_iter,
+                                         min_iter=1,
+                                         tol=1e-3,
+                                         trace=True)
+
+        spaco_fit.cross_logliklihood()
+        neglik[:, irank] = spaco_fit.cross_likloss.copy()
+        means[irank] = np.mean(spaco_fit.cross_likloss)
+        means_std[irank] = means[irank]+add_std * np.std( neglik[:, irank])/np.sqrt(float(I))
+        if early_stop:
+            if irank > 0:
+                if means_std[irank] > means[irank - 1]:
+                    break
+        print(np.mean(means[irank]))
+    return neglik
 
 
 '''

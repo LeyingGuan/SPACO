@@ -1,4 +1,6 @@
-import spaco
+import spaco as spaco
+import importlib
+importlib.reload(spaco)
 import numpy as np
 import pandas as pd
 import copy
@@ -44,47 +46,24 @@ def dataGen(I, T, J, q, rate, s=3, K0 = 3, SNR1 = 1.0, SNR2 = 3.0):
 
 it = 101
 I = 100; T = 30; J = 10; q = 100;
-SNR2 = 1.0; SNR1 = 10.0
+SNR2 = 10.0; SNR1 = 1.0; rate = 0.1
 spaco.seed_everything(seed=it)
 
-data = dataGen(I=I, T=T, J=J, q=q, rate = .8, s=3, K0 = 3, SNR1 = SNR1, SNR2 = SNR2)
+data = dataGen(I=I, T=T, J=J, q=q, rate = rate, s=3, K0 = 3, SNR1 = SNR1, SNR2 = SNR2)
 
-rank = 5
+ranks = np.arange(1,11)
+negliks = spaco.rank_selection_function(X = data[2], O = data[3], Z = data[9],
+                                        time_stamps = data[4], ranks=ranks, early_stop = True,
+                            max_iter = 30, cv_iter = 5, add_std = 0.0)
 
-data_obj = dict(X=data[2], O=data[3], Z=data[9],
-                time_stamps=data[4], rank=rank)
 
-spaco_fit = spaco.SPACOcv(data_obj)
-spaco_fit.train_preparation(run_prepare=True,
-                        run_init=True,
-                        mean_trend_removal=False,
-                        smooth_penalty=True)
+means = negliks.mean(axis = 0)
+means_std  = means+negliks.std(axis = 0)/np.sqrt(I)*0.5
+means=means[~np.isnan(means)]
+means_std =means_std[~np.isnan(means_std)]
+idx_min = np.argmin(means)
+rank_min = ranks[idx_min]
+rank_std= ranks[np.where(means<=means_std[idx_min])][0]
+print(rank_min)
+print(rank_std)
 
-spaco_fit.train(update_cov=True,
-            update_sigma_mu=True,
-            update_sigma_noise=True,
-            lam1_update=True, lam2_update=True,
-            max_iter=30, min_iter=1,
-            tol=1e-4, trace=True
-            )
-
-train_ids, test_ids = spaco.cutfoldid(n = I, nfolds = 5, random_state = 2022)
-
-spaco_fit.cross_validation_train( train_ids,
-                               test_ids,
-                               max_iter=10,
-                               min_iter = 1,
-                               tol=1e-3,
-                               trace = True)
-
-spaco_fit.cross_logliklihood()
-means = spaco_fit.cross_likloss.mean(axis = 0)
-means_std  = np.zeros(means.shape)
-for k in np.arange(1, means.shape[0]):
-    means_std[k] = (spaco_fit.cross_likloss[:,k] - spaco_fit.cross_likloss[:,k-1]).std()
-
-means_std = means_std/np.sqrt(I)
-means_prev = np.array([np.inf]+list(means[:-1]))
-res = pd.DataFrame({'means':means, 'means_std':means_std,
-    'means_diff': means_prev-means, 'means_diff_std':means_prev-means - means_std})
-print(res)
