@@ -606,7 +606,8 @@ class SPACObase():
             tmp1 += tmp3
             tmp2 += tmp4
         if self.homoNoise:
-            self.sigma_noise[:] = tmp3/tmp4
+            #fix typo: from tmp3/tmp4 to tmp1/tmp2
+            self.sigma_noise[:] = tmp1/tmp2
     def sigma_mu_update(self):
         sigma_mu = np.zeros((self.K))
         fitted = np.zeros((self.num_subjects, self.K))
