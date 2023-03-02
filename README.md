@@ -18,14 +18,31 @@ pip install git+https://github.com/LeyingGuan/SPACO.git#egg=spaco
 ## Tutorial
 ### Input data explanations
 X: a N by T by J tensor (subject by time by feature), missing value as np.nan
+
 O: an indicator a N by T by J tensor, 1=observed, 0 = missing.
+
 Z: auxiliary n by p covariate. Z = None = SPACO-.
+
 time_stamps: length T vectors indicating time. It is used for creating default regularization matrix matrix.
+
 ### Load package
 import spaco as spaco
 
-### Runing SPACO with given rank
+### Runing SPACO with given rank (=integer)
+data_obj = dict(X=X, O=O, Z=Z,time_stamps=time_stamps, rank=rank)
+spaco_fit = spaco.SPACOcv(data_obj)
+spaco_fit.train_preparation(run_prepare=True,
+                        run_init=True,
+                        mean_trend_removal=False,
+                        smooth_penalty=True)
 
+spaco_fit.train(update_cov=True,
+            update_sigma_mu=True,
+            update_sigma_noise=True,
+            lam1_update=True, lam2_update=True,
+            max_iter=30, min_iter=1,
+            tol=1e-4, trace=True
+            )
 ### Rank selection
 spaco.rank_selection_function(X = X, O = O, Z = Z, time_stamps = time_stamps, ranks=ranks, early_stop = True,
                             max_iter = 30, cv_iter = 5)
