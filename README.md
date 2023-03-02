@@ -1,7 +1,7 @@
 # SPACO (Python Implementation of SPACO)
 
 
-Overview:
+## Overview:
 
 python package for spaco and associated data used in the paper.
 
@@ -11,6 +11,6 @@ The directories simulations, realdata contain code for reproducing the simulatio
 
 Reference: Guan, Leying. "A smoothed and probabilistic PARAFAC model with covariates." arXiv preprint arXiv:2104.05184 (2021).
 
-Package installation.
+## Installation.
 
 pip install git+https://github.com/LeyingGuan/SPACO.git#egg=spaco
