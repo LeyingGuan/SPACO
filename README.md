@@ -29,8 +29,11 @@ import spaco as spaco
 ### Rank selection
 spaco.rank_selection_function(X = X, O = O, Z = Z, time_stamps = time_stamps, ranks=ranks, early_stop = True,
                             max_iter = 30, cv_iter = 5)
+                            
 ranks: a  1D array of candidate ranks for consideration, ordered from small to large
+
 max_iter: at each rank, we maximum number iteration for SPACO estimation using all data.
+
 cv_iter: number of iteration in cross-validation after initializing the model parameteres using the full model
 
 ### Randomization test from cross-fitting
