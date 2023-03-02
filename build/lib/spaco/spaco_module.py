@@ -606,7 +606,8 @@ class SPACObase():
             tmp1 += tmp3
             tmp2 += tmp4
         if self.homoNoise:
-            self.sigma_noise[:] = tmp3/tmp4
+            #fix typo: from tmp3/tmp4 to tmp1/tmp2
+            self.sigma_noise[:] = tmp1/tmp2
     def sigma_mu_update(self):
         sigma_mu = np.zeros((self.K))
         fitted = np.zeros((self.num_subjects, self.K))
@@ -843,47 +844,6 @@ class SPACOcv(SPACO):
                 loglik[i] -= np.sum(np.matmul(tmp1, cov_i) * tmp1)
                 loglik[i] += np.sum(np.log(sigma_mu))+np.sum(np.log(s20)) - np.log(np.linalg.det(cov_i))
         self.cross_likloss = loglik
-
-    # def cross_logliklihood(self):
-    #     #caclulate log likelihood using cross validation for rank k=1,...,K
-    #     loglik = np.zeros((self.num_subjects, self.K))
-    #     s2 = np.zeros((self.num_times * self.num_features))
-    #     for j in np.arange(self.num_features):
-    #         ll = np.arange(j * self.num_times,(j + 1) * self.num_times)
-    #         s2[ll] = self.sigma_noise[j]
-    #     for k in np.arange(len(self.test_ids)):
-    #         Phi = self.crossPhi[:,:,k]
-    #         V =self.crossV[:,:,k]
-    #         sigma_mu = self.cross_sigma_mu[:,k]
-    #         cov = self.cov_cross
-    #         beta = self.crossBeta[:,:,k]
-    #         mu = np.matmul(self.Z, beta)
-    #         PhiV =np.zeros((self.num_times*self.num_features, self.K))
-    #         #find the most correlated PhiV dimension and flip the sign
-    #         for l in np.arange(self.K):
-    #             PhiV[:,l] = np.kron(V[:,l].reshape((self.num_features,1)),
-    #                                  Phi[:,l].reshape((self.num_times,1))).reshape(-1)
-    #         for i in self.test_ids[k]:
-    #             xte0 = self.intermediantes['Xmod1'][i, :]
-    #             obs0 = self.intermediantes['O1'][i, :]
-    #             obs0 = np.where(obs0 == 1)[0]
-    #             PhiV0 = PhiV[obs0, :]
-    #             xte0 = xte0[obs0]
-    #             s20 = s2[obs0]
-    #             xhat = np.zeros(xte0.shape)
-    #             det_sigma_mu= 1.0
-    #             for l in np.arange(self.K):
-    #                 det_sigma_mu *= sigma_mu[l]
-    #                 xhat += PhiV0[:,l] * mu[i, l]
-    #                 fi = xte0-xhat
-    #                 cov_l_inv =np.matmul(np.transpose(PhiV0[:,:(l+1)]), PhiV0[:,:(l+1)]/s20.reshape((len(s20),1)))+np.diag(sigma_mu[:(l+1)])
-    #                 cov_l = np.linalg.inv(cov_l_inv)
-    #                 loglik[i,l] = np.sum(fi **2/s20)
-    #                 tmp1 = np.matmul(fi/s20, PhiV0[:,:(l+1)])
-    #                 loglik[i, l] -= np.sum(np.matmul(tmp1, cov_l) * tmp1)
-    #                 loglik[i, l] += np.log(det_sigma_mu) - np.log(np.linalg.det(cov_l))
-    #                 loglik[i, l] += np.sum(np.log(s20))
-    #     self.cross_likloss = loglik
 
 '''
 CRtest and CRtest_cross fix estiamted model parameters other than beta
