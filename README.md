@@ -16,3 +16,11 @@ Reference: Guan, Leying. "A smoothed and probabilistic PARAFAC model with covari
 pip install git+https://github.com/LeyingGuan/SPACO.git#egg=spaco
 
 ## Tutorial
+
+### Input data explanations
+
+### Runing SPACO with given rank
+
+### Rank selection
+
+### Randomization test from cross-fitting
