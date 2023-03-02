@@ -14,3 +14,5 @@ Reference: Guan, Leying. "A smoothed and probabilistic PARAFAC model with covari
 ## Installation.
 
 pip install git+https://github.com/LeyingGuan/SPACO.git#egg=spaco
+
+## Tutorial
