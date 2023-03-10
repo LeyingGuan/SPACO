@@ -71,13 +71,13 @@ spaco_fit.cross_validation_train( train_ids,
 delta = 0;tol = 0.01;fixbeta0 = False;method = "cross";nfolds = 5;random_state = 0
 feature_eval = spaco.CRtest_cross(spaco_fit, type=method, delta=delta)
 ```
-#precalculate quantities that stay the same for different Z
+#### precalculate quantities that stay the same for different Z
 ```ruby
 feature_eval.precalculation()
 feature_eval.cut_folds(nfolds=nfolds, random_state=random_state)
 feature_eval.beta_fun_full(nfolds=nfolds, max_iter=1, tol= tol, fixbeta0=fixbeta0)
 ```
-####drop each feature j/beta[j] and refit beta[-j]
+#### drop each feature j/beta[j] and refit beta[-j]
 ```ruby
 for j in np.arange(feature_eval.Z.shape[1]):
     feature_eval.beta_fun_one(nfolds=nfolds, j=j, max_iter=1, fixbeta0=fixbeta0)
@@ -90,7 +90,7 @@ for j in np.arange(feature_eval.Z.shape[1]):
     feature_eval.coef_partial_fun(j = j, inplace=True)
     feature_eval.coef_marginal_fun(j = j, inplace=True)
 ```
-####calculate the test statistics for conditional and mariginal independence amd compare to obtain the p-values 
+#### calculate the test statistics for conditional and mariginal independence amd compare to obtain the p-values 
 ```ruby
 feature_eval.coef_partial_random = np.zeros((feature_eval.coef_partial.shape[0],
                                              feature_eval.coef_partial.shape[1],
