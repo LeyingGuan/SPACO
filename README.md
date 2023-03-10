@@ -30,6 +30,7 @@ import spaco as spaco
 
 ### Runing SPACO with given rank (=integer)
 data_obj = dict(X=X, O=O, Z=Z,time_stamps=time_stamps, rank=rank)
+
 spaco_fit = spaco.SPACOcv(data_obj)
 
 spaco_fit.train_preparation(run_prepare=True,
