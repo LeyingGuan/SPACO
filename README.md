@@ -29,17 +29,18 @@ time_stamps: length T vectors indicating time. It is used for creating default r
 import spaco as spaco
 
 ### Rank selection
-```ruby
-spaco.rank_selection_function(X = X, O = O, Z = Z, time_stamps = time_stamps, ranks=ranks, early_stop = True,
-                            max_iter = 30, cv_iter = 5)
-                            
 ranks: a  1D array of candidate ranks for consideration, ordered from small to large
 
 max_iter: at each rank, we maximum number iteration for SPACO estimation using all data.
 
 cv_iter: number of iteration in cross-validation after initializing the model parameteres using the full model
+```ruby
+spaco.rank_selection_function(X = X, O = O, Z = Z, time_stamps = time_stamps, ranks=ranks, early_stop = True,
+                            max_iter = 30, cv_iter = 5)
+                            
 ```
 ### Runing SPACO with given rank (=integer)
+```ruby
 data_obj = dict(X=X, O=O, Z=Z,time_stamps=time_stamps, rank=rank)
 
 spaco_fit = spaco.SPACOcv(data_obj)
@@ -57,12 +58,13 @@ spaco_fit.train(update_cov=True,
             tol=1e-4, trace=True
             )
 
-
+```
 ### Randomization test from cross-fitting
 Zconditional: N by q by B, Randomized auxiliary covariates using conditional randomization
 
 Zmarginal: N by q by B, Randomized auxiliary covariates using permutation
 #### (After trained the spaco model)
+```ruby
 train_ids, test_ids = spaco.cutfoldid(n = I, nfolds = 5, random_state = 2022)
 
 spaco_fit.cross_validation_train( train_ids,
@@ -75,7 +77,7 @@ spaco_fit.cross_validation_train( train_ids,
 delta = 0;tol = 0.01;fixbeta0 = False;method = "cross";nfolds = 5;random_state = 0
 
 feature_eval = spaco.CRtest_cross(spaco_fit, type=method, delta=delta)
-
+```
 #precalculate quantities that stay the same for different Z
 
 feature_eval.precalculation()
