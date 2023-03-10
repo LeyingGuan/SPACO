@@ -29,6 +29,7 @@ time_stamps: length T vectors indicating time. It is used for creating default r
 import spaco as spaco
 
 ### Rank selection
+```ruby
 spaco.rank_selection_function(X = X, O = O, Z = Z, time_stamps = time_stamps, ranks=ranks, early_stop = True,
                             max_iter = 30, cv_iter = 5)
                             
@@ -37,7 +38,7 @@ ranks: a  1D array of candidate ranks for consideration, ordered from small to l
 max_iter: at each rank, we maximum number iteration for SPACO estimation using all data.
 
 cv_iter: number of iteration in cross-validation after initializing the model parameteres using the full model
-
+```
 ### Runing SPACO with given rank (=integer)
 data_obj = dict(X=X, O=O, Z=Z,time_stamps=time_stamps, rank=rank)
 
