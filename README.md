@@ -36,8 +36,11 @@ max_iter: at each rank, we maximum number iteration for SPACO estimation using a
 
 cv_iter: number of iteration in cross-validation after initializing the model parameteres using the full model
 ```ruby
-spaco.rank_selection_function(X = X, O = O, Z = Z, time_stamps = time_stamps, ranks=ranks, early_stop = True,
-                            max_iter = 30, cv_iter = 5)                    
+negliks = spaco.rank_selection_function(X = X, O = O, Z = Z, time_stamps = time_stamps, ranks=ranks, early_stop = True,
+                            max_iter = 30, cv_iter = 5) 
+means = negliks.mean(axis = 0)
+idx_min = np.argmin(means)
+rank_min = ranks[idx_min]
 ```
 ### 2.4 Runing SPACO with given rank (=integer)
 ```ruby
