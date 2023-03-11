@@ -82,7 +82,7 @@ feature_eval.beta_fun_full(nfolds=nfolds, max_iter=1, tol= tol, fixbeta0=fixbeta
 for j in np.arange(feature_eval.Z.shape[1]):
     feature_eval.beta_fun_one(nfolds=nfolds, j=j, max_iter=1, fixbeta0=fixbeta0)
  ```
-####Get the refitted beta[j] using randomized quantities
+#### Get the refitted beta[j] using randomized quantities
 ```ruby 
 for j in np.arange(feature_eval.Z.shape[1]):
     feature_eval.precalculation_response(j=j)
