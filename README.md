@@ -90,7 +90,7 @@ for j in np.arange(feature_eval.Z.shape[1]):
     feature_eval.coef_partial_fun(j = j, inplace=True)
     feature_eval.coef_marginal_fun(j = j, inplace=True)
 ```
-#### calculate the test statistics for conditional and mariginal independence amd compare to obtain the p-values 
+#### calculate the test statistics and compare them to obtain the p-values 
 ```ruby
 feature_eval.coef_partial_random = np.zeros((feature_eval.coef_partial.shape[0],
                                              feature_eval.coef_partial.shape[1],
