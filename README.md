@@ -11,12 +11,12 @@ The directories simulations, realdata contain code for reproducing the simulatio
 
 Reference: Guan, Leying. "A smoothed and probabilistic PARAFAC model with covariates." arXiv preprint arXiv:2104.05184 (2021).
 
-## Installation.
+## 1. Installation.
 
 pip install git+https://github.com/LeyingGuan/SPACO.git#egg=spaco
 
-## Tutorial
-### Input data explanations
+## 2. Tutorial
+### 2.1 Input data explanations
 X: a N by T by J tensor (subject by time by feature), missing value as np.nan
 
 O: an indicator a N by T by J tensor, 1=observed, 0 = missing.
@@ -25,11 +25,11 @@ Z: auxiliary n by p covariate. Z = None = SPACO-.
 
 time_stamps: length T vectors indicating time. It is used for creating default regularization matrix matrix.
 
-### Load package
+### 2.2 Load package
 ```ruby
 import spaco as spaco
 ```
-### Rank selection
+### 2.3 Rank selection
 ranks: a  1D array of candidate ranks for consideration, ordered from small to large
 
 max_iter: at each rank, we maximum number iteration for SPACO estimation using all data.
@@ -39,7 +39,7 @@ cv_iter: number of iteration in cross-validation after initializing the model pa
 spaco.rank_selection_function(X = X, O = O, Z = Z, time_stamps = time_stamps, ranks=ranks, early_stop = True,
                             max_iter = 30, cv_iter = 5)                    
 ```
-### Runing SPACO with given rank (=integer)
+### 2.4 Runing SPACO with given rank (=integer)
 ```ruby
 data_obj = dict(X=X, O=O, Z=Z,time_stamps=time_stamps, rank=rank)
 spaco_fit = spaco.SPACOcv(data_obj)
@@ -55,7 +55,7 @@ spaco_fit.train(update_cov=True,
             tol=1e-4, trace=True
             )
 ```
-### Randomization test from cross-fitting
+### 2.5 Randomization test from cross-fitting
 Zconditional: N by q by B, Randomized auxiliary covariates using conditional randomization
 
 Zmarginal: N by q by B, Randomized auxiliary covariates using permutation
@@ -106,7 +106,7 @@ pvals_partial_empirical, pvals_partial_fitted =  feature_eval.pvalue_calculation
 pvals_marginal_empirical, pvals_marginal_fitted = feature_eval.pvalue_calculation(type = "marginal",pval_fit = True, dist_name ='nct')
 ```
 
-### Example on benchmarking on synthetic data at a rank
+### 2.6 Example on benchmarking on synthetic data at a rank
 Let Phi0, V0, U0 be the true time trajectories, loadings, and subject scores.
 ```ruby
 comparison_res = spaco.comparison_pipe(Phi0=Phi0,
