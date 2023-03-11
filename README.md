@@ -106,3 +106,21 @@ pvals_partial_empirical, pvals_partial_fitted =  feature_eval.pvalue_calculation
 pvals_marginal_empirical, pvals_marginal_fitted = feature_eval.pvalue_calculation(type = "marginal",pval_fit = True, dist_name ='nct')
 ```
 
+### Example on benchmarking on synthetic data at a rank
+Let Phi0, V0, U0 be the true time trajectories, loadings, and subject scores.
+```ruby
+comparison_res = spaco.comparison_pipe(Phi0=Phi0,
+                                     V0 =V0,
+                                     U0 = U0,
+                                     X = X,
+                                     Z =  Z,
+                                     O = O,
+                                     time_stamps = T0)
+comparison_res.compare_run(rank = 3, max_iter = 30)
+for method in comparison_res.eval_dict.keys():
+    if method != "empirical":
+        print(method)
+        print(comparison_res.eval_dict[method].alignment)
+
+```
+
