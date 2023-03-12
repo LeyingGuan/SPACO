@@ -818,8 +818,11 @@ class SPACOcv(SPACO):
             V =self.crossV[:,:,k]
             sigma_mu = self.cross_sigma_mu[:,k]
             cov = self.cov_cross
-            beta = self.crossBeta[:,:,k]
-            mu = np.matmul(self.Z, beta)
+            if self.Z is not None:
+                beta = self.crossBeta[:,:,k]
+                mu = np.matmul(self.Z, beta)
+             else:
+                mu = np.zeros((self.num_subjects,sekf.K))
             PhiV =np.zeros((self.num_times*self.num_features, self.K))
             #find the most correlated PhiV dimension and flip the sign
             for l in np.arange(self.K):
